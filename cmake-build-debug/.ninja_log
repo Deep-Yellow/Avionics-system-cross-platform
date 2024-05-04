@@ -1,0 +1,6 @@
+# ninja log v5
+5	462	1713807418289156059	CMakeFiles/RegistryCPP.dir/main.cpp.o	25438ef4a402b371
+642	686	1713807458895293924	RegistryCPP	b6346c137abc8023
+5	527	1713702289139890447	CMakeFiles/RegistryCPP.dir/src/common/ServiceRegistry.cpp.o	6dba15c3be8ed5ae
+6	2840	1713801283355721754	CMakeFiles/RegistryCPP.dir/src/client/Client.cpp.o	6320734334e03c09
+4	642	1713807458848498537	CMakeFiles/RegistryCPP.dir/src/server/Server.cpp.o	1ec6665b16af2c1b

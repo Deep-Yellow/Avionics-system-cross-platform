@@ -43,14 +43,21 @@ private:
 
 public:
     Client();
+
     ~Client();
 
-    bool Call(const std::string& method, const GetRadarStatusRequest& args, Response* reply);
+    bool Call(const std::string &method, const GetRadarStatusRequest &args, Response *reply);
+
     bool IsAvailable() const;
-    uint64_t registerRequest(const std::shared_ptr<Request>& request);
+
+    uint64_t registerRequest(const std::shared_ptr<Request> &request);
+
     std::shared_ptr<Request> removeRequest(uint64_t req_seq);
-    void terminateRequests(const std::string& err);
-    void send(const std::shared_ptr<Request>& call);
+
+    void terminateRequests(const std::string &err);
+
+    void send(const std::shared_ptr<Request> &call);
+
     void checkPendingRequests();
 };
 

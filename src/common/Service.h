@@ -8,6 +8,17 @@
 #define REGISTRYCPP_SERVICEINSTANCE_H
 
 /**
+ * 一些嵌套的定义
+ */
+
+enum class ServiceRequestType {
+    FindService,
+    RegisterService,
+    DeregisterService,
+    HeartBeat
+};
+
+/**
  * 服务注册、发现相关
  */
 struct Node {
@@ -17,7 +28,9 @@ struct Node {
     std::string region;  // 区域
 
     Node() : latitude(0.0), longitude(0.0) {}
-    Node(std::string id, double lat, double lon) : nodeId(std::move(id)), latitude(lat), longitude(lon) {}
+
+    Node(std::string id, double lat, double lon, std::string reg) : nodeId(std::move(id)), latitude(lat),
+                                                                    longitude(lon), region(std::move(reg)) {}
 };
 
 
@@ -52,7 +65,46 @@ struct ServiceDescriptor {
             : mode(mode), location(std::move(loc)), performance(perf) {}
 };
 
+// 服务描述结构体
+struct FindServiceRequest {
+    std::string service_name;
+    ServiceDescriptor descriptor;
 
+    FindServiceRequest(std::string name, ServiceDescriptor desc)
+            : service_name(std::move(name)), descriptor(std::move(desc)) {}
+};
 
+struct ServiceRegisterRequest {
+    std::string service_name;
+    std::string instance_id;
+    std::string node_id;
+    bool is_alive;
+};
+
+struct ServiceDeregisterRequest {
+    std::string service_name;
+    std::string instance_id;
+};
+
+struct HeartBeatRequest {
+    std::string instance_id;
+};
+
+struct ServiceRegistryRequestContainer {
+    ServiceRequestType requestType;  // 用于标识请求的类型
+    std::variant<FindServiceRequest, ServiceRegisterRequest, ServiceDeregisterRequest, HeartBeatRequest> request;
+
+    explicit ServiceRegistryRequestContainer(const FindServiceRequest &req)
+            : requestType(ServiceRequestType::FindService), request(req) {}
+
+    explicit ServiceRegistryRequestContainer(const ServiceRegisterRequest &req)
+            : requestType(ServiceRequestType::RegisterService), request(req) {}
+
+    explicit ServiceRegistryRequestContainer(const ServiceDeregisterRequest &req)
+            : requestType(ServiceRequestType::DeregisterService), request(req) {}
+
+    explicit ServiceRegistryRequestContainer(const HeartBeatRequest &req)
+            : requestType(ServiceRequestType::HeartBeat), request(req) {}
+};
 
 #endif //REGISTRYCPP_SERVICEINSTANCE_H

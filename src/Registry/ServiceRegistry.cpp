@@ -7,19 +7,68 @@
 #include <cmath>
 #include <random>
 
-bool isValidUUID(const std::string& uuid);
-double calculateDistance(const LocationInfo& a, const LocationInfo& b);
+bool isValidUUID(const std::string &uuid);
+
+double calculateDistance(const LocationInfo &a, const LocationInfo &b);
+
+// Initiation for testing
+void ServiceRegistry::initialize() {
+    // 添加节点
+    Node node1("node1", 30.2741, 120.1551, "Hangzhou");  // 杭州的经纬度
+    Node node2("node2", 31.2304, 121.4737, "Shanghai"); // 上海的经纬度
+    nodeList[node1.nodeId] = node1;
+    nodeList[node2.nodeId] = node2;
+
+    // 添加服务
+    Service service1;
+    service1.service_name = "DataService";
+    service1.instance_id = "service1";
+    service1.nodeId = "node2";
+    service1.is_alive = true;
+
+    Service service2;
+    service2.service_name = "DataService";
+    service2.instance_id = "service2";
+    service2.nodeId = "node1";
+    service2.is_alive = true;
+
+    Service service3;
+    service3.service_name = "AuthenticationService";
+    service3.instance_id = "service3";
+    service3.nodeId = "node2";
+    service3.is_alive = true;
+
+    Service service4;
+    service4.service_name = "LoggingService";
+    service4.instance_id = "service4";
+    service4.nodeId = "node2";
+    service4.is_alive = true;
+
+    Service service5;
+    service5.service_name = "LoggingService";
+    service5.instance_id = "service5";
+    service5.nodeId = "node1";
+    service5.is_alive = true;
+
+    // 将服务添加到注册表
+    registry[service1.service_name].push_back(service1);
+    registry[service2.service_name].push_back(service2);
+    registry[service3.service_name].push_back(service3);
+    registry[service4.service_name].push_back(service4);
+    registry[service5.service_name].push_back(service5);
+}
+
 
 // ----- Business logic code -------
 
-PerformanceMetrics findPerformanceMetrics(const std::string& instance_id);
+PerformanceMetrics findPerformanceMetrics(const std::string &instance_id);
 
 void ServiceRegistry::registerNode(const Node &node) {
     nodeList[node.nodeId] = node;
 }
 
 // instanceId采用UUID，暂定方案是由服务自己生成
-Response ServiceRegistry::registerService(const ServiceRegisterRequest& request) {
+Response ServiceRegistry::registerService(const ServiceRegisterRequest &request) {
     if (!isValidUUID(request.instance_id)) {
         return Response(0, Response::STATUS_ERROR, "Illegal instanceId.", RespVariant{});
     } else {
@@ -36,13 +85,13 @@ Response ServiceRegistry::registerService(const ServiceRegisterRequest& request)
     }
 }
 
-Response ServiceRegistry::deregisterService(const ServiceDeregisterRequest& request) {
-    auto& instances = registry[request.service_name];
+Response ServiceRegistry::deregisterService(const ServiceDeregisterRequest &request) {
+    auto &instances = registry[request.service_name];
     auto originalSize = instances.size(); // 保存原始大小以判断是否有元素被删除
 
     instances.erase(
             std::remove_if(instances.begin(), instances.end(),
-                           [&request](const Service& instance) {
+                           [&request](const Service &instance) {
                                return instance.instance_id == request.instance_id;
                            }),
             instances.end());
@@ -56,13 +105,13 @@ Response ServiceRegistry::deregisterService(const ServiceDeregisterRequest& requ
 
 // TODO
 // 技术点之一 服务的匹配
-Response ServiceRegistry::findService(const FindServiceRequest& request) {
+Response ServiceRegistry::findService(const FindServiceRequest &request) {
     auto it = registry.find(request.service_name);
     if (it != registry.end() && !it->second.empty()) {
-        Service* bestService = nullptr;
+        Service *bestService = nullptr;
         double bestScore = std::numeric_limits<double>::max();
 
-        for (Service& service : it->second) {
+        for (Service &service: it->second) {
             if (!service.is_alive) continue;
 
             double score;
@@ -91,9 +140,9 @@ Response ServiceRegistry::findService(const FindServiceRequest& request) {
     return Response(0, Response::STATUS_NOT_FOUND, "Service not found or no suitable service", RespVariant{});
 }
 
-void ServiceRegistry::heartbeat(const HeartBeatRequest& request) {
-    for (auto& entry : registry) {
-        for (Service& service : entry.second) {
+void ServiceRegistry::heartbeat(const HeartBeatRequest &request) {
+    for (auto &entry: registry) {
+        for (Service &service: entry.second) {
             if (service.instance_id == request.instance_id) {
                 service.is_alive = true;  // 更新服务状态为活跃
                 break;
@@ -102,11 +151,11 @@ void ServiceRegistry::heartbeat(const HeartBeatRequest& request) {
     }
 }
 
-LocationInfo ServiceRegistry::findServiceLocation(const std::string& instance_id) {
-    for (const auto& pair : registry) {
-        for (const Service& service : pair.second) {
+LocationInfo ServiceRegistry::findServiceLocation(const std::string &instance_id) {
+    for (const auto &pair: registry) {
+        for (const Service &service: pair.second) {
             if (service.instance_id == instance_id) {
-                const Node& node = nodeList[service.nodeId];
+                const Node &node = nodeList[service.nodeId];
                 return LocationInfo{node.latitude, node.longitude, ""}; // 使用实际的地区描述
             }
         }
@@ -115,12 +164,41 @@ LocationInfo ServiceRegistry::findServiceLocation(const std::string& instance_id
     return LocationInfo{0.0, 0.0, "Service not found"};
 }
 
-bool isValidUUID(const std::string& uuid) {
+Response ServiceRegistry::handleRequest(const ServiceRegistryRequestContainer &requestContainer) {
+    switch (requestContainer.requestType) {
+        case ServiceRequestType::RegisterService: {
+            auto &req = std::get<ServiceRegisterRequest>(requestContainer.request);
+            return registerService(req);
+        }
+        case ServiceRequestType::DeregisterService: {
+            auto &req = std::get<ServiceDeregisterRequest>(requestContainer.request);
+            return deregisterService(req);
+        }
+        case ServiceRequestType::FindService: {
+            auto &req = std::get<FindServiceRequest>(requestContainer.request);
+            return findService(req);
+        }
+        case ServiceRequestType::HeartBeat: {
+            auto &req = std::get<HeartBeatRequest>(requestContainer.request);
+            heartbeat(req);
+            return Response(0, Response::STATUS_SUCCESS, "Heartbeat processed.", RespVariant{});
+        }
+        default:
+            return Response(0, Response::STATUS_ERROR, "Unsupported request type.", RespVariant{});
+    }
+}
+
+ServiceRegistry::ServiceRegistry() {
+    initialize();
+}
+
+
+bool isValidUUID(const std::string &uuid) {
     std::regex uuidRegex("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$");
     return std::regex_match(uuid, uuidRegex);
 }
 
-double calculateDistance(const LocationInfo& a, const LocationInfo& b) {
+double calculateDistance(const LocationInfo &a, const LocationInfo &b) {
     // Hypothetical function to calculate geographic distance
     // In real-world scenarios, use appropriate geographic distance calculation
     return std::sqrt(std::pow(a.latitude - b.latitude, 2) + std::pow(a.longitude - b.longitude, 2));
@@ -129,7 +207,7 @@ double calculateDistance(const LocationInfo& a, const LocationInfo& b) {
 // TODO
 // 关于 监控 服务运行状态信息需要再设计
 // 当前做法：直接生成随机数
-PerformanceMetrics findPerformanceMetrics(const std::string& instance_id) {
+PerformanceMetrics findPerformanceMetrics(const std::string &instance_id) {
     // 创建一个随机数生成器
     std::random_device rd;  // 用于获取种子
     std::mt19937 gen(rd()); // 标准 mersenne_twister_engine

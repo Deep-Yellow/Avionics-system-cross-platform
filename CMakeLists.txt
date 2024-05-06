@@ -9,9 +9,9 @@ add_executable(RegistryCPP main.cpp
         src/Registry/ServiceRegistry.cpp
         src/Registry/ServiceRegistry.h
         src/common/Args.h
-        src/server/Server.cpp
-        src/server/Server.h
-        src/client/Client.cpp
-        src/client/Client.h
+        src/Server/Server.cpp
+        src/Server/Server.h
+        src/Client/Client.cpp
+        src/Client/Client.h
         src/Gateway/Gateway.cpp
         src/Gateway/Gateway.h)

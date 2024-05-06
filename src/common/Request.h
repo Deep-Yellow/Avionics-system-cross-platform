@@ -110,6 +110,7 @@ public:
     // GetRadarStatus接口的返回值
     explicit Response(const GetRadarStatusResponse &response)
             : seq(0), status(response.status), responseBody(response) {}
+
     // SetRadarStatus接口的返回值
     explicit Response(const SetRadarStatusResponse &response)
             : seq(0), status(response.status), responseBody(response) {}

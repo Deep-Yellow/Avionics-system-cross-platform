@@ -61,17 +61,17 @@ build CMakeFiles/RegistryCPP.dir/src/Registry/ServiceRegistry.cpp.o: CXX_COMPILE
   OBJECT_DIR = CMakeFiles/RegistryCPP.dir
   OBJECT_FILE_DIR = CMakeFiles/RegistryCPP.dir/src/Registry
 
-build CMakeFiles/RegistryCPP.dir/src/server/Server.cpp.o: CXX_COMPILER__RegistryCPP_unscanned_Debug /Users/deep/AdiCodes/Clang/RegistryCPP/src/server/Server.cpp || cmake_object_order_depends_target_RegistryCPP
-  DEP_FILE = CMakeFiles/RegistryCPP.dir/src/server/Server.cpp.o.d
+build CMakeFiles/RegistryCPP.dir/src/Server/Server.cpp.o: CXX_COMPILER__RegistryCPP_unscanned_Debug /Users/deep/AdiCodes/Clang/RegistryCPP/src/Server/Server.cpp || cmake_object_order_depends_target_RegistryCPP
+  DEP_FILE = CMakeFiles/RegistryCPP.dir/src/Server/Server.cpp.o.d
   FLAGS = -g -std=gnu++17 -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX12.3.sdk -fcolor-diagnostics
   OBJECT_DIR = CMakeFiles/RegistryCPP.dir
-  OBJECT_FILE_DIR = CMakeFiles/RegistryCPP.dir/src/server
+  OBJECT_FILE_DIR = CMakeFiles/RegistryCPP.dir/src/Server
 
-build CMakeFiles/RegistryCPP.dir/src/client/Client.cpp.o: CXX_COMPILER__RegistryCPP_unscanned_Debug /Users/deep/AdiCodes/Clang/RegistryCPP/src/client/Client.cpp || cmake_object_order_depends_target_RegistryCPP
-  DEP_FILE = CMakeFiles/RegistryCPP.dir/src/client/Client.cpp.o.d
+build CMakeFiles/RegistryCPP.dir/src/Client/Client.cpp.o: CXX_COMPILER__RegistryCPP_unscanned_Debug /Users/deep/AdiCodes/Clang/RegistryCPP/src/Client/Client.cpp || cmake_object_order_depends_target_RegistryCPP
+  DEP_FILE = CMakeFiles/RegistryCPP.dir/src/Client/Client.cpp.o.d
   FLAGS = -g -std=gnu++17 -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX12.3.sdk -fcolor-diagnostics
   OBJECT_DIR = CMakeFiles/RegistryCPP.dir
-  OBJECT_FILE_DIR = CMakeFiles/RegistryCPP.dir/src/client
+  OBJECT_FILE_DIR = CMakeFiles/RegistryCPP.dir/src/Client
 
 build CMakeFiles/RegistryCPP.dir/src/Gateway/Gateway.cpp.o: CXX_COMPILER__RegistryCPP_unscanned_Debug /Users/deep/AdiCodes/Clang/RegistryCPP/src/Gateway/Gateway.cpp || cmake_object_order_depends_target_RegistryCPP
   DEP_FILE = CMakeFiles/RegistryCPP.dir/src/Gateway/Gateway.cpp.o.d
@@ -87,7 +87,7 @@ build CMakeFiles/RegistryCPP.dir/src/Gateway/Gateway.cpp.o: CXX_COMPILER__Regist
 #############################################
 # Link the executable RegistryCPP
 
-build RegistryCPP: CXX_EXECUTABLE_LINKER__RegistryCPP_Debug CMakeFiles/RegistryCPP.dir/main.cpp.o CMakeFiles/RegistryCPP.dir/src/Registry/ServiceRegistry.cpp.o CMakeFiles/RegistryCPP.dir/src/server/Server.cpp.o CMakeFiles/RegistryCPP.dir/src/client/Client.cpp.o CMakeFiles/RegistryCPP.dir/src/Gateway/Gateway.cpp.o
+build RegistryCPP: CXX_EXECUTABLE_LINKER__RegistryCPP_Debug CMakeFiles/RegistryCPP.dir/main.cpp.o CMakeFiles/RegistryCPP.dir/src/Registry/ServiceRegistry.cpp.o CMakeFiles/RegistryCPP.dir/src/Server/Server.cpp.o CMakeFiles/RegistryCPP.dir/src/Client/Client.cpp.o CMakeFiles/RegistryCPP.dir/src/Gateway/Gateway.cpp.o
   FLAGS = -g -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX12.3.sdk
   OBJECT_DIR = CMakeFiles/RegistryCPP.dir
   POST_BUILD = :

@@ -63,7 +63,7 @@ bool Client::Call(const std::string &method, const GetRadarStatusRequest &args, 
         *reply = future.get();  // 可能抛出异常，如果promise被设置为异常
         // 检查响应中的错误字段
         if (reply->status != Response::STATUS_SUCCESS) {
-            std::cerr << "Error from server: " << reply->error << std::endl;
+            std::cerr << "Error from Server: " << reply->error << std::endl;
             return false;
         }
 //        std::cout << "-------"<<reply->status<<std::endl;
@@ -110,7 +110,8 @@ std::shared_ptr<Request> Client::removeRequest(uint64_t req_seq) {
         return request;  // 返回找到的请求
     } else {
         // 如果没有找到对应的请求，打印日志消息
-        std::cerr << "Request with Seq " << req_seq << " not found, might have timed out or been terminated already." << std::endl;
+        std::cerr << "Request with Seq " << req_seq << " not found, might have timed out or been terminated already."
+                  << std::endl;
         return nullptr;  // 返回空指针
     }
 }
@@ -131,7 +132,7 @@ void Client::send(const std::shared_ptr<Request> &request) {
             uint64_t seq = registerRequest(request);  // 注册这个请求并获得序列号
             // 省略实际的网络发送逻辑，仅模拟调用
             sendByDDS(request);  // 发送请求通过DDS
-            std::cout<< "[send] DDS sent success" << std::endl;
+            std::cout << "[send] DDS sent success" << std::endl;
             // 不再在这里处理响应
         } catch (const std::exception &e) {
             checkPendingRequests(); //检查是否正确register

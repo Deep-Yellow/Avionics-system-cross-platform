@@ -106,12 +106,28 @@ Response ServiceRegistry::deregisterService(const ServiceDeregisterRequest &requ
 // TODO
 // 技术点之一 服务的匹配
 Response ServiceRegistry::findService(const FindServiceRequest &request) {
-    auto it = registry.find(request.service_name);
+    // 解析 service_name 以获取 MethodId
+    std::istringstream iss(request.service_name);
+    std::string segment;
+    std::vector<std::string> seglist;
+
+    while (std::getline(iss, segment, '.')) {
+        seglist.push_back(segment);
+    }
+
+    if (seglist.size() < 3) {
+        return Response(0, Response::STATUS_ERROR, "Invalid service name format.", RespVariant{});
+    }
+
+    std::string methodId = seglist[2];  // 获取 MethodId
+
+    // 查找具有相应 MethodId 的服务
+    auto it = registry.find(methodId);
     if (it != registry.end() && !it->second.empty()) {
         Service *bestService = nullptr;
         double bestScore = std::numeric_limits<double>::max();
 
-        for (Service &service: it->second) {
+        for (Service &service : it->second) {
             if (!service.is_alive) continue;
 
             double score;
@@ -120,7 +136,7 @@ Response ServiceRegistry::findService(const FindServiceRequest &request) {
                 score = calculateDistance(request.descriptor.location, serviceLocation);
             } else if (request.descriptor.mode == 1) { // 响应时间最短
                 PerformanceMetrics metrics = findPerformanceMetrics(service.instance_id);
-                score = metrics.responseTime; // 假设性能指标中包含响应时间
+                score = metrics.responseTime;
             } else {
                 continue; // 如果有其他模式，也可以在这里添加处理逻辑
             }

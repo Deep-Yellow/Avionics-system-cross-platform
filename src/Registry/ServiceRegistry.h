@@ -7,6 +7,7 @@
 #include <map>
 #include <string>
 #include <algorithm>
+#include <sstream>
 #include "../common/Service.h"
 #include "../common/Request.h"
 
@@ -30,6 +31,8 @@ public:
 
     Response deregisterService(const ServiceDeregisterRequest &request);
 
+    // TODO
+    // “NodeId.ServiceId.MethodId" 的截取
     Response findService(const FindServiceRequest &request);
 
     // 入口函数，在DDS的回调中被调用

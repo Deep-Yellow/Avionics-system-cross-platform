@@ -12,13 +12,16 @@
 #include "../common/Request.h"
 
 
-// TODO list
-// 1. 超过30s没有心跳的将服务设置为不可用
+/// description
+/// 1. 初始化服务列表 2. 两个编队的有人机交换服务列表 3. 构建哈希树 4. 服务调用 5. 服务状态更新 6. 无人机增加、退出，导致树结构变化
 
 class ServiceRegistry {
 private:
     std::map<std::string, std::vector<Service>> registry;
     std::map<std::string, Node> nodeList;
+    void syncServiceListOnInit();
+    void sendSerializedServices(const std::vector<uint8_t>& serialized_services);
+    void receiveAndDeserializeServices();
 
 public:
     ServiceRegistry();

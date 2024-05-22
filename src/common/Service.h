@@ -3,6 +3,10 @@
 //
 #include <string>
 #include <utility>
+#include <iostream>
+#include <sstream>
+#include <vector>
+#include <cstdint>
 
 #ifndef REGISTRYCPP_SERVICEINSTANCE_H
 #define REGISTRYCPP_SERVICEINSTANCE_H
@@ -39,6 +43,38 @@ struct Service {
     std::string instance_id;  // 实例ID unique
     std::string nodeId;       // 服务所在节点ID
     bool is_alive;            // 是否健康活跃
+
+    void serialize(std::vector<uint8_t>& out) const {
+        auto serialize_string = [&out](const std::string& str) {
+            uint32_t length = str.size();
+            out.insert(out.end(), reinterpret_cast<const uint8_t*>(&length), reinterpret_cast<const uint8_t*>(&length) + sizeof(length));
+            out.insert(out.end(), str.begin(), str.end());
+        };
+
+        serialize_string(service_name);
+        serialize_string(instance_id);
+        serialize_string(nodeId);
+        out.push_back(static_cast<uint8_t>(is_alive));
+    }
+    static Service deserialize(const std::vector<uint8_t>& in, size_t& offset) {
+        auto deserialize_string = [&in, &offset]() {
+            uint32_t length;
+            std::memcpy(&length, &in[offset], sizeof(length));
+            offset += sizeof(length);
+            std::string str(in.begin() + offset, in.begin() + offset + length);
+            offset += length;
+            return str;
+        };
+
+        Service service;
+        service.service_name = deserialize_string();
+        service.instance_id = deserialize_string();
+        service.nodeId = deserialize_string();
+        service.is_alive = static_cast<bool>(in[offset]);
+        offset += sizeof(uint8_t);
+
+        return service;
+    }
 };
 
 // 定义一个结构体来表示服务的位置信息

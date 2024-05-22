@@ -6,10 +6,17 @@
 #include <limits>
 #include <cmath>
 #include <random>
+#include <sstream>
+#include <string>
+#include <iomanip>
 
 bool isValidUUID(const std::string &uuid);
 
 double calculateDistance(const LocationInfo &a, const LocationInfo &b);
+
+std::vector<uint8_t> mock_receive_message();
+std::vector<uint8_t> serialize_services(const std::vector<Service>& services);
+std::vector<Service> deserialize_services(const std::vector<uint8_t>& data);
 
 // Initiation for testing
 void ServiceRegistry::initialize() {
@@ -206,9 +213,35 @@ Response ServiceRegistry::handleRequest(const ServiceRegistryRequestContainer &r
 
 ServiceRegistry::ServiceRegistry() {
     initialize();
+    syncServiceListOnInit();
 }
 
+void ServiceRegistry::syncServiceListOnInit() {
+    // 从 registry 成员变量中获取服务列表并序列化
+    std::vector<Service> my_services;
+    for (const auto& [service_name, services] : registry) {
+        my_services.insert(my_services.end(), services.begin(), services.end());
+    }
+    std::vector<uint8_t> serialized_services = serialize_services(my_services);
+    sendSerializedServices(serialized_services);
+    receiveAndDeserializeServices();
+}
 
+void ServiceRegistry::sendSerializedServices(const std::vector<uint8_t> &serialized_services) {
+    // 模拟发送序列化后的服务列表
+    std::cout << "Sending serialized services..." << std::endl;
+}
+
+void ServiceRegistry::receiveAndDeserializeServices() {
+    std::vector<uint8_t> received_data = mock_receive_message();
+    std::vector<Service> services = deserialize_services(received_data);
+
+    for (const auto& service : services) {
+        registry[service.service_name].push_back(service);
+    }
+}
+
+//-----------辅助方法 未来调整一下文件结构
 bool isValidUUID(const std::string &uuid) {
     std::regex uuidRegex("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$");
     return std::regex_match(uuid, uuidRegex);
@@ -237,4 +270,79 @@ PerformanceMetrics findPerformanceMetrics(const std::string &instance_id) {
     int throughput = 1000; // 假设吞吐量
 
     return PerformanceMetrics{randomResponseTime, uptime, throughput};
+}
+
+// 自定义哈希函数
+std::string to_hex(unsigned char* data, size_t length) {
+    std::ostringstream oss;
+    for (size_t i = 0; i < length; ++i) {
+        oss << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(data[i]);
+    }
+    return oss.str();
+}
+
+std::string improved_hash(const std::string& input) {
+    unsigned char hash[16] = {0}; // 使用16字节（128位）的哈希值
+
+    for (size_t i = 0; i < input.size(); ++i) {
+        hash[i % 16] ^= input[i];
+        hash[i % 16] = (hash[i % 16] >> 1) | (hash[i % 16] << 7); // 右旋转操作
+        hash[i % 16] ^= (i * 31); // 增加一个与索引相关的扰动
+    }
+
+    return to_hex(hash, 16);
+}
+
+std::string hashService(const Service& service) {
+    std::ostringstream oss;
+    oss << service.service_name
+        << service.instance_id
+        << service.nodeId
+        << service.is_alive;
+
+    std::string input = oss.str();
+    return improved_hash(input);
+}
+
+std::vector<uint8_t> serialize_services(const std::vector<Service>& services) {
+    std::vector<uint8_t> result;
+
+    // 序列化服务数量
+    uint32_t num_services = services.size();
+    result.insert(result.end(), reinterpret_cast<const uint8_t*>(&num_services), reinterpret_cast<const uint8_t*>(&num_services) + sizeof(num_services));
+
+    for (const auto& service : services) {
+        service.serialize(result);
+    }
+
+    return result;
+}
+
+// 反序列化 std::vector<Service>
+std::vector<Service> deserialize_services(const std::vector<uint8_t>& data) {
+    size_t offset = 0;
+
+    uint32_t num_services;
+    std::memcpy(&num_services, &data[offset], sizeof(num_services));
+    offset += sizeof(num_services);
+
+    std::vector<Service> services;
+    services.reserve(num_services);
+
+    for (uint32_t i = 0; i < num_services; ++i) {
+        services.push_back(Service::deserialize(data, offset));
+    }
+
+    return services;
+}
+
+// 模拟接收消息的方法，返回包含服务信息的 std::vector<uint8_t>
+std::vector<uint8_t> mock_receive_message() {
+    std::vector<Service> services = {
+            {"ExampleService1", "12345", "node1", true},
+            {"ExampleService2", "67890", "node2", false},
+            {"ExampleService3", "54321", "node3", true}
+    };
+
+    return serialize_services(services);
 }

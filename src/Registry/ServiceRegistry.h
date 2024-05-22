@@ -13,9 +13,7 @@
 
 
 // TODO list
-// 1. 超过30s没有心跳的将服务设置为不可用 超过60s的删除该服务
-// 2. 设置一个入口函数，根据请求参数的类型（ServiceRegisterRequest、ServiceDeregisterRequest等）调用对应的的方法
-// 3.
+// 1. 超过30s没有心跳的将服务设置为不可用
 
 class ServiceRegistry {
 private:
@@ -31,8 +29,6 @@ public:
 
     Response deregisterService(const ServiceDeregisterRequest &request);
 
-    // TODO
-    // “NodeId.ServiceId.MethodId" 的截取
     Response findService(const FindServiceRequest &request);
 
     // 入口函数，在DDS的回调中被调用

@@ -9,60 +9,33 @@
 #include <sstream>
 #include <string>
 #include <iomanip>
+#include <utility>
 
 bool isValidUUID(const std::string &uuid);
 
 double calculateDistance(const LocationInfo &a, const LocationInfo &b);
+
+void printServiceRegistry(const std::map<std::string, std::vector<Service>>& registry);
 
 std::vector<uint8_t> mock_receive_message();
 std::vector<uint8_t> serialize_services(const std::vector<Service>& services);
 std::vector<Service> deserialize_services(const std::vector<uint8_t>& data);
 
 // Initiation for testing
-void ServiceRegistry::initialize() {
+void ServiceRegistry::initialize(const std::vector<Service>& services) {
     // 添加节点
     Node node1("node1", 30.2741, 120.1551, "Hangzhou");  // 杭州的经纬度
     Node node2("node2", 31.2304, 121.4737, "Shanghai"); // 上海的经纬度
     nodeList[node1.nodeId] = node1;
     nodeList[node2.nodeId] = node2;
 
-    // 添加服务
-    Service service1;
-    service1.service_name = "DataService";
-    service1.instance_id = "service1";
-    service1.nodeId = "node2";
-    service1.is_alive = true;
-
-    Service service2;
-    service2.service_name = "DataService";
-    service2.instance_id = "service2";
-    service2.nodeId = "node1";
-    service2.is_alive = true;
-
-    Service service3;
-    service3.service_name = "AuthenticationService";
-    service3.instance_id = "service3";
-    service3.nodeId = "node2";
-    service3.is_alive = true;
-
-    Service service4;
-    service4.service_name = "LoggingService";
-    service4.instance_id = "service4";
-    service4.nodeId = "node2";
-    service4.is_alive = true;
-
-    Service service5;
-    service5.service_name = "LoggingService";
-    service5.instance_id = "service5";
-    service5.nodeId = "node1";
-    service5.is_alive = true;
-
     // 将服务添加到注册表
-    registry[service1.service_name].push_back(service1);
-    registry[service2.service_name].push_back(service2);
-    registry[service3.service_name].push_back(service3);
-    registry[service4.service_name].push_back(service4);
-    registry[service5.service_name].push_back(service5);
+    for (const auto& service : services) {
+        registry[service.service_name].push_back(service);
+    }
+
+    // 构建Merkle树
+    buildMerkleTree();
 }
 
 
@@ -211,10 +184,47 @@ Response ServiceRegistry::handleRequest(const ServiceRegistryRequestContainer &r
     }
 }
 
-ServiceRegistry::ServiceRegistry() {
-    initialize();
-    syncServiceListOnInit();
+ServiceRegistry::ServiceRegistry(std::string  name) : registryName(std::move(name)) {
+//    // 创建服务
+//    Service service1;
+//    service1.service_name = "DataService";
+//    service1.instance_id = "service1";
+//    service1.nodeId = "node2";
+//    service1.is_alive = true;
+//
+//    Service service2;
+//    service2.service_name = "DataService";
+//    service2.instance_id = "service2";
+//    service2.nodeId = "node1";
+//    service2.is_alive = true;
+//
+//    Service service3;
+//    service3.service_name = "AuthenticationService";
+//    service3.instance_id = "service3";
+//    service3.nodeId = "node2";
+//    service3.is_alive = true;
+//
+//    Service service4;
+//    service4.service_name = "LoggingService";
+//    service4.instance_id = "service4";
+//    service4.nodeId = "node2";
+//    service4.is_alive = true;
+//
+//    Service service5;
+//    service5.service_name = "LoggingService";
+//    service5.instance_id = "service5";
+//    service5.nodeId = "node1";
+//    service5.is_alive = true;
+//
+//    // 将服务添加到向量中
+//    std::vector<Service> services = {service1, service2, service3, service4, service5};
+//
+//    // 使用服务向量初始化注册表
+//    initialize(services);
+//    syncServiceListOnInit();
 }
+
+// ----- 服务状态信息同步
 
 void ServiceRegistry::syncServiceListOnInit() {
     // 从 registry 成员变量中获取服务列表并序列化
@@ -229,7 +239,7 @@ void ServiceRegistry::syncServiceListOnInit() {
 
 void ServiceRegistry::sendSerializedServices(const std::vector<uint8_t> &serialized_services) {
     // 模拟发送序列化后的服务列表
-    std::cout << "Sending serialized services..." << std::endl;
+    std::cout << "[" << registryName << "] Sending serialized services..." << std::endl;
 }
 
 void ServiceRegistry::receiveAndDeserializeServices() {
@@ -239,6 +249,130 @@ void ServiceRegistry::receiveAndDeserializeServices() {
     for (const auto& service : services) {
         registry[service.service_name].push_back(service);
     }
+}
+
+void ServiceRegistry::buildMerkleTree() {
+    // 清空现有的树
+    tree = merkle::Tree();
+
+    // 遍历 registry 中的每个服务列表，计算其哈希值并插入到 Merkle 树中
+    for (const auto& entry : registry) {
+        const std::vector<Service>& services = entry.second;
+        if (!services.empty()) {
+            // 计算整个 vector<Service> 的哈希值
+            std::string hashValue = hashServices(services);
+            merkle::Tree::Hash hash(hashValue);
+            tree.insert(hash);
+        }
+    }
+
+    // 计算根哈希
+    auto rootHash = tree.root();
+    std::cout << "[" << registryName << "] Merkle Tree Root Hash: " << rootHash.to_string() << std::endl;
+}
+
+void ServiceRegistry::setServiceList(const std::vector<Service>& services) {
+    // 清空现有的注册表
+    registry.clear();
+
+    // 将服务添加到注册表
+    for (const auto& service : services) {
+        registry[service.service_name].push_back(service);
+    }
+
+    // 构建Merkle树
+    buildMerkleTree();
+}
+
+std::vector<std::string> ServiceRegistry::compareAndSyncTree(const std::vector<uint8_t>& byteArray) {
+    std::vector<std::string> changedServiceTypes;
+
+    // 反序列化传入的树
+    merkle::Tree remoteTree(byteArray);
+
+    // 比较根哈希
+    auto localRoot = tree.root();
+    auto remoteRoot = remoteTree.root();
+
+    if (localRoot != remoteRoot) {
+        std::cout << "[" << registryName << "] Roots are not equal. Synchronizing trees..." << std::endl;
+
+        // 找到不一致的节点索引
+        auto inconsistentIndices = tree.findInconsistentLeaves(remoteTree);
+
+        for (auto index : inconsistentIndices) {
+            // 获取对应的 map 键值
+            auto it = registry.begin();
+            std::advance(it, index);
+            const std::string& serviceName = it->first;
+
+            // 输出服务名
+            std::cout << "[" << registryName << "] Found inconsistent service: " << serviceName << std::endl;
+
+            // 如果需要处理不一致服务的信息，这里可以加入请求服务信息的逻辑
+            // const auto& service = it->second.front();
+            // if (remoteTree.leaf(index).to_string() != localRoot.to_string()) {
+            //     requestServiceInfo(service);
+            // }
+
+            // 记录变更的服务类型名字
+            changedServiceTypes.push_back(serviceName);
+        }
+    } else {
+        std::cout << "[" << registryName << "] Roots are equal. No synchronization needed." << std::endl;
+    }
+
+    return changedServiceTypes;
+}
+
+std::vector<uint8_t> ServiceRegistry::serializeServicesForNames(const std::vector<std::string> &serviceNames) {
+    std::vector<Service> selectedServices;
+
+    // 遍历传入的服务名列表
+    for (const auto& serviceName : serviceNames) {
+        // 查找服务名对应的服务列表
+        auto it = registry.find(serviceName);
+        if (it != registry.end()) {
+            // 遍历服务列表，选择满足条件的服务（nodeid 和 registryName 相等）
+            for (const auto& service : it->second) {
+                if (service.nodeId == registryName) {
+                    selectedServices.push_back(service);
+                }
+            }
+        }
+    }
+
+    // 序列化选中的服务列表
+    return serialize_services(selectedServices);
+}
+
+void ServiceRegistry::deserializeAndSetServices(const std::vector<uint8_t> &serializedServices) {
+    // 反序列化服务列表
+    std::vector<Service> deserializedServices = deserialize_services(serializedServices);
+
+    if(!deserializedServices.empty()){
+
+        // 更新本地的 registry
+        for (const auto& service : deserializedServices) {
+            // 删除原有相同服务名和节点名的服务
+            auto& vec = registry[service.service_name];
+
+            vec.erase(std::remove_if(vec.begin(), vec.end(),
+                                     [&service](const Service& s) {
+                                         return s.nodeId == service.nodeId;
+                                     }),
+                      vec.end());
+
+            // 添加新的服务
+            registry[service.service_name].push_back(service);
+//            printServiceRegistry(registry);
+        }
+
+        buildMerkleTree();
+        std::cout << "[" << registryName << "] Deserialized and updated local registry." << std::endl;
+    }
+
+
 }
 
 //-----------辅助方法 未来调整一下文件结构
@@ -282,18 +416,18 @@ std::string to_hex(unsigned char* data, size_t length) {
 }
 
 std::string improved_hash(const std::string& input) {
-    unsigned char hash[16] = {0}; // 使用16字节（128位）的哈希值
+    unsigned char hash[32] = {0}; // 使用32字节（256位）的哈希值
 
     for (size_t i = 0; i < input.size(); ++i) {
-        hash[i % 16] ^= input[i];
-        hash[i % 16] = (hash[i % 16] >> 1) | (hash[i % 16] << 7); // 右旋转操作
-        hash[i % 16] ^= (i * 31); // 增加一个与索引相关的扰动
+        hash[i % 32] ^= input[i];
+        hash[i % 32] = (hash[i % 32] >> 1) | (hash[i % 32] << 7); // 右旋转操作
+        hash[i % 32] ^= (i * 31); // 增加一个与索引相关的扰动
     }
 
-    return to_hex(hash, 16);
+    return to_hex(hash, 32);
 }
 
-std::string hashService(const Service& service) {
+std::string ServiceRegistry::hashService(const Service& service) {
     std::ostringstream oss;
     oss << service.service_name
         << service.instance_id
@@ -303,6 +437,28 @@ std::string hashService(const Service& service) {
     std::string input = oss.str();
     return improved_hash(input);
 }
+
+std::string ServiceRegistry::hashServices(const std::vector<Service>& services) {
+    std::ostringstream combinedHashes;
+
+    for (const auto& service : services) {
+        combinedHashes << hashService(service);
+    }
+
+    return improved_hash(combinedHashes.str());
+}
+
+std::vector<Service> ServiceRegistry::getServiceList() const {
+    std::vector<Service> services;
+    for (const auto& entry : registry) {
+        const std::vector<Service>& serviceList = entry.second;
+        for (const Service& service : serviceList) {
+            services.push_back(service);
+        }
+    }
+    return services;
+}
+
 
 std::vector<uint8_t> serialize_services(const std::vector<Service>& services) {
     std::vector<uint8_t> result;
@@ -345,4 +501,21 @@ std::vector<uint8_t> mock_receive_message() {
     };
 
     return serialize_services(services);
+}
+
+
+void printServiceRegistry(const std::map<std::string, std::vector<Service>>& registry) {
+    std::cout << "Service Registry Contents:" << std::endl;
+    for (const auto& entry : registry) {
+        const std::string& serviceType = entry.first;
+        const std::vector<Service>& services = entry.second;
+
+        std::cout << "Service Type: " << serviceType << std::endl;
+        for (const auto& service : services) {
+            std::cout << "  Service Name: " << service.service_name
+                      << ", Instance ID: " << service.instance_id
+                      << ", Node ID: " << service.nodeId
+                      << ", Is Alive: " << (service.is_alive ? "Yes" : "No") << std::endl;
+        }
+    }
 }

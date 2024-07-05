@@ -14,4 +14,6 @@ add_executable(RegistryCPP main.cpp
         src/Client/Client.cpp
         src/Client/Client.h
         src/Gateway/Gateway.cpp
-        src/Gateway/Gateway.h)
+        src/Gateway/Gateway.h
+        src/test.cpp
+        src/test.h)

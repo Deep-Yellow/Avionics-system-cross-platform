@@ -8,6 +8,7 @@
 #include <string>
 #include <algorithm>
 #include <sstream>
+#include "merklecpp.h"
 #include "../common/Service.h"
 #include "../common/Request.h"
 
@@ -17,14 +18,19 @@
 
 class ServiceRegistry {
 private:
+    std::string registryName; // 新增的成员变量，用于存储注册表的名字
     std::map<std::string, std::vector<Service>> registry;
     std::map<std::string, Node> nodeList;
+
     void syncServiceListOnInit();
-    void sendSerializedServices(const std::vector<uint8_t>& serialized_services);
     void receiveAndDeserializeServices();
+    void buildMerkleTree(); // 新增的构建Merkle树的方法
 
 public:
-    ServiceRegistry();
+
+    merkle::Tree tree;
+
+    ServiceRegistry(std::string  name);
 
     void registerNode(const Node &node);
 
@@ -34,15 +40,31 @@ public:
 
     Response findService(const FindServiceRequest &request);
 
+
     // 入口函数，在DDS的回调中被调用
     Response handleRequest(const ServiceRegistryRequestContainer &requestContainer);
 
     void heartbeat(const HeartBeatRequest &request);
 
+    void sendSerializedServices(const std::vector<uint8_t>& serialized_services);
+
     LocationInfo findServiceLocation(const std::string &instance_id);
 
+    std:: string hashService(const Service& service);
 
-    void initialize();
+    std::string hashServices(const std::vector<Service>& services); // 新增hashServices方法
+
+    void setServiceList(const std::vector<Service>& services); // 新增设置服务列表的方法
+
+    std::vector<std::string> compareAndSyncTree(const std::vector<uint8_t>& byteArray); // 新增比较并同步树的方法
+
+    std::vector<uint8_t> serializeServicesForNames(const std::vector<std::string>& serviceNames);
+
+    void deserializeAndSetServices(const std::vector<uint8_t>& serializedServices);
+
+    void initialize(const std::vector<Service>& services);
+
+    std::vector<Service> getServiceList() const;
 };
 
 

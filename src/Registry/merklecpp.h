@@ -1445,29 +1445,24 @@ namespace merkle {
         }
 
         /// Customize
-        void compareNodes(TreeT::Node *localNode, TreeT::Node *remoteNode, std::vector<TreeT::Node *> &inconsistentNodes) {
-            if (!localNode || !remoteNode) return;
+        std::vector<size_t> findInconsistentLeaves(TreeT& remoteTree) {
+            std::vector<size_t> inconsistentIndices;
 
-            // 检查两个节点的哈希是否相同
-            if (localNode->hash != remoteNode->hash) {
-                // 如果当前节点是叶节点
-                if (!localNode->left && !localNode->right) {
-                    // 将不一致的叶节点加入列表
-                    inconsistentNodes.push_back(localNode);
-                } else {
-                    // 递归比较左子树
-                    compareNodes(localNode->left, remoteNode->left, inconsistentNodes);
-                    // 递归比较右子树
-                    compareNodes(localNode->right, remoteNode->right, inconsistentNodes);
+            size_t minIdx = this->min_index();
+            size_t maxIdx = this->max_index();
+
+            for (size_t i = minIdx; i <= maxIdx; ++i) {
+                const Hash &localLeaf = this->leaf(i);
+                const Hash &remoteLeaf = remoteTree.leaf(i);
+
+                if (localLeaf != remoteLeaf) {
+                    inconsistentIndices.push_back(i);
                 }
             }
+
+            return inconsistentIndices;
         }
 
-        std::vector<TreeT::Node*> findInconsistentLeaves(TreeT& remoteTree) {
-            std::vector<TreeT::Node*> inconsistentLeaves;
-            compareNodes(this->_root, remoteTree._root, inconsistentLeaves);
-            return inconsistentLeaves;
-        }
 
     protected:
         /// @brief Vector of leaf nodes current in the tree

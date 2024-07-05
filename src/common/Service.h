@@ -77,18 +77,24 @@ struct Service {
     }
 };
 
-// 定义一个结构体来表示服务的位置信息
-struct LocationInfo {
-    double latitude;  // 纬度
-    double longitude; // 经度
-    std::string region; // 区域描述，例如机场代码或城市名
-};
+//// 定义一个结构体来表示服务的位置信息
+//struct LocationInfo {
+//    double latitude;  // 纬度
+//    double longitude; // 经度
+//    std::string region; // 区域描述，例如区域代码
+//};
 
 // 定义一个结构体来表示服务的性能指标
 struct PerformanceMetrics {
     double responseTime; // 响应时间，单位为毫秒
     double uptime;       // 正常运行时间百分比
     int throughput;      // 吞吐量，单位为请求/秒
+};
+
+struct LocationInfo {
+    double latitude;  // 纬度
+    double longitude; // 经度
+    std::string region; // 区域描述，例如区域代码
 };
 
 struct ServiceDescriptor {
@@ -100,6 +106,8 @@ struct ServiceDescriptor {
     ServiceDescriptor(int mode, LocationInfo loc, PerformanceMetrics perf)
             : mode(mode), location(std::move(loc)), performance(perf) {}
 };
+
+
 
 // 服务描述结构体
 struct FindServiceRequest {
